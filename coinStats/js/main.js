@@ -1,7 +1,7 @@
 /*
 *    main.js
 *    Mastering Data Visualization with D3.js
-*    6.8 - Line graphs in D3
+*    Project 3 - CoinStats
 */
 		
 const MARGIN = { LEFT: 20, RIGHT: 100, TOP: 50, BOTTOM: 100 }
