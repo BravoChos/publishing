@@ -3,8 +3,8 @@
 *    Mastering Data Visualization with D3.js
 *    Project 3 - CoinStats
 */
-		
-const MARGIN = { LEFT: 20, RIGHT: 100, TOP: 50, BOTTOM: 100 }
+
+const MARGIN = { LEFT: 100, RIGHT: 100, TOP: 50, BOTTOM: 100 }
 const WIDTH = 800 - MARGIN.LEFT - MARGIN.RIGHT
 const HEIGHT = 500 - MARGIN.TOP - MARGIN.BOTTOM
 
@@ -15,10 +15,35 @@ const svg = d3.select("#chart-area").append("svg")
 const g = svg.append("g")
   .attr("transform", `translate(${MARGIN.LEFT}, ${MARGIN.TOP})`)
 
-// time parser for x-scale
-const parseTime = d3.timeParse("%Y")
+// time parsers/formatters
+const parseTime = d3.timeParse("%d/%m/%Y")
+const formatTime = d3.timeFormat("%d/%m/%Y")
 // for tooltip
-const bisectDate = d3.bisector(d => d.year).left
+const bisectDate = d3.bisector(d => d.date).left
+
+// add the line for the first time
+g.append("path")
+	.attr("class", "line")
+	.attr("fill", "none")
+	.attr("stroke", "grey")
+	.attr("stroke-width", "3px")
+
+// axis labels
+const xLabel = g.append("text")
+	.attr("class", "x axisLabel")
+	.attr("y", HEIGHT + 50)
+	.attr("x", WIDTH / 2)
+	.attr("font-size", "20px")
+	.attr("text-anchor", "middle")
+	.text("Time")
+const yLabel = g.append("text")
+	.attr("class", "y axisLabel")
+	.attr("transform", "rotate(-90)")
+	.attr("y", -60)
+	.attr("x", -170)
+	.attr("font-size", "20px")
+	.attr("text-anchor", "middle")
+	.text("Price ($)")
 
 // scales
 const x = d3.scaleTime().range([0, WIDTH])
@@ -36,47 +61,86 @@ const xAxis = g.append("g")
 	.attr("transform", `translate(0, ${HEIGHT})`)
 const yAxis = g.append("g")
 	.attr("class", "y axis")
-    
-// y-axis label
-yAxis.append("text")
-	.attr("class", "axis-title")
-	.attr("transform", "rotate(-90)")
-	.attr("y", 6)
-	.attr("dy", ".71em")
-	.style("text-anchor", "end")
-	.attr("fill", "#5D6971")
-	.text("Population)")
 
-// line path generator
-const line = d3.line()
-	.x(d => x(d.year))
-	.y(d => y(d.value))
+// event listeners
+$("#coin-select").on("change", update)
+$("#var-select").on("change", update)
 
-d3.json("data/example.json").then(data => {
-	// clean data
-	data.forEach(d => {
-		d.year = parseTime(d.year)
-		d.value = Number(d.value)
+// add jQuery UI slider
+$("#date-slider").slider({
+	range: true,
+	max: parseTime("31/10/2017").getTime(),
+	min: parseTime("12/5/2013").getTime(),
+	step: 86400000, // one day
+	values: [
+		parseTime("12/5/2013").getTime(),
+		parseTime("31/10/2017").getTime()
+	],
+	slide: (event, ui) => {
+		$("#dateLabel1").text(formatTime(new Date(ui.values[0])))
+		$("#dateLabel2").text(formatTime(new Date(ui.values[1])))
+		update()
+	}
+})
+
+d3.json("data/coins.json").then(data => {
+	// prepare and clean data
+	filteredData = {}
+	Object.keys(data).forEach(coin => {
+		filteredData[coin] = data[coin]
+			.filter(d => {
+				return !(d["price_usd"] == null)
+			}).map(d => {
+				d["price_usd"] = Number(d["price_usd"])
+				d["24h_vol"] = Number(d["24h_vol"])
+				d["market_cap"] = Number(d["market_cap"])
+				d["date"] = parseTime(d["date"])
+				return d
+			})
 	})
 
-	// set scale domains
-	x.domain(d3.extent(data, d => d.year))
+	// run the visualization for the first time
+	update()
+})
+
+function update() {
+	const t = d3.transition().duration(1000)
+
+	// filter data based on selections
+	const coin = $("#coin-select").val()
+	const yValue = $("#var-select").val()
+	const sliderValues = $("#date-slider").slider("values")
+	const dataTimeFiltered = filteredData[coin].filter(d => {
+		return ((d.date >= sliderValues[0]) && (d.date <= sliderValues[1]))
+	})
+
+	// update scales
+	x.domain(d3.extent(dataTimeFiltered, d => d.date))
 	y.domain([
-		d3.min(data, d => d.value) / 1.005, 
-		d3.max(data, d => d.value) * 1.005
+		d3.min(dataTimeFiltered, d => d[yValue]) / 1.005, 
+		d3.max(dataTimeFiltered, d => d[yValue]) * 1.005
 	])
 
-	// generate axes once scales have been set
-	xAxis.call(xAxisCall.scale(x))
-	yAxis.call(yAxisCall.scale(y))
+	// fix for format values
+	const formatSi = d3.format(".2s")
+	function formatAbbreviation(x) {
+		const s = formatSi(x)
+		switch (s[s.length - 1]) {
+			case "G": return s.slice(0, -1) + "B" // billions
+			case "k": return s.slice(0, -1) + "K" // thousands
+		}
+		return s
+	}
 
-	// add line to chart
-	g.append("path")
-		.attr("class", "line")
-		.attr("fill", "none")
-		.attr("stroke", "grey")
-		.attr("stroke-width", "3px")
-		.attr("d", line(data))
+	// update axes
+	xAxisCall.scale(x)
+	xAxis.transition(t).call(xAxisCall)
+	yAxisCall.scale(y)
+	yAxis.transition(t).call(yAxisCall.tickFormat(formatAbbreviation))
+
+	// clear old tooltips
+	d3.select(".focus").remove()
+	d3.select(".overlay").remove()
 
 	/******************************** Tooltip Code ********************************/
 
@@ -111,15 +175,32 @@ d3.json("data/example.json").then(data => {
 
 	function mousemove() {
 		const x0 = x.invert(d3.mouse(this)[0])
-		const i = bisectDate(data, x0, 1)
-		const d0 = data[i - 1]
-		const d1 = data[i]
-		const d = x0 - d0.year > d1.year - x0 ? d1 : d0
-		focus.attr("transform", `translate(${x(d.year)}, ${y(d.value)})`)
-		focus.select("text").text(d.value)
-		focus.select(".x-hover-line").attr("y2", HEIGHT - y(d.value))
-		focus.select(".y-hover-line").attr("x2", -x(d.year))
+		const i = bisectDate(dataTimeFiltered, x0, 1)
+		const d0 = dataTimeFiltered[i - 1]
+		const d1 = dataTimeFiltered[i]
+		const d = x0 - d0.date > d1.date - x0 ? d1 : d0
+		focus.attr("transform", `translate(${x(d.date)}, ${y(d[yValue])})`)
+		focus.select("text").text(d[yValue])
+		focus.select(".x-hover-line").attr("y2", HEIGHT - y(d[yValue]))
+		focus.select(".y-hover-line").attr("x2", -x(d.date))
 	}
 	
 	/******************************** Tooltip Code ********************************/
-})
+
+	// Path generator
+	line = d3.line()
+		.x(d => x(d.date))
+		.y(d => y(d[yValue]))
+
+	// Update our line path
+	g.select(".line")
+		.transition(t)
+		.attr("d", line(dataTimeFiltered))
+
+	// Update y-axis label
+	const newText = (yValue === "price_usd") ? "Price ($)" 
+		: (yValue === "market_cap") ? "Market Capitalization ($)" 
+			: "24 Hour Trading Volume ($)"
+	yLabel.text(newText)
+}
+
