@@ -1,14 +1,16 @@
 /*
 *    main.js
 *    Mastering Data Visualization with D3.js
-*    10.4 - Converting our code to OOP
+*    10.5 - Handling events across objects
 */
 
-let lineChart1
-let lineChart2
-let lineChart3
-let lineChart4
-let lineChart5
+// global variables
+let lineChart
+let donutChart1
+let donutChart2
+let filteredData = {}
+let donutData = []
+const color = d3.scaleOrdinal(d3.schemePastel1)
 
 // time parsers/formatters
 const parseTime = d3.timeParse("%d/%m/%Y")
@@ -37,7 +39,6 @@ $("#date-slider").slider({
 
 d3.json("data/coins.json").then(data => {
 	// prepare and clean data
-	filteredData = {}
 	Object.keys(data).forEach(coin => {
 		filteredData[coin] = data[coin]
 			.filter(d => {
@@ -49,19 +50,24 @@ d3.json("data/coins.json").then(data => {
 				d["date"] = parseTime(d["date"])
 				return d
 			})
+		donutData.push({
+			"coin": coin,
+			"data": filteredData[coin].slice(-1)[0]
+		})
 	})
 
-	lineChart1 = new LineChart("#chart-area1", "bitcoin")
-	lineChart2 = new LineChart("#chart-area2", "ethereum")
-	lineChart3 = new LineChart("#chart-area3", "bitcoin_cash")
-	lineChart4 = new LineChart("#chart-area4", "litecoin")
-	lineChart5 = new LineChart("#chart-area5", "ripple")
+	lineChart = new LineChart("#line-area")
+	donutChart1 = new DonutChart("#donut-area1", "24h_vol")
+	donutChart2 = new DonutChart("#donut-area2", "market_cap")
 })
 
+function arcClicked(arc) {
+	$("#coin-select").val(arc.data.coin)
+	updateCharts()
+}
+
 function updateCharts(){
-	lineChart1.wrangleData()
-	lineChart2.wrangleData()
-	lineChart3.wrangleData()
-	lineChart4.wrangleData()
-	lineChart5.wrangleData()
+	lineChart.wrangleData()
+	donutChart1.wrangleData()
+	donutChart2.wrangleData()
 }

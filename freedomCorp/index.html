@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="description" content="">
-	<title>10.4 - Converting our code to OOP</title>
+	<title>10.5 - Handling events across objects</title>
 	<!-- Bootstrap -->
 	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
 	<!-- jQueryUI styling -->
@@ -28,6 +28,15 @@
 				</div>
 			</div>
 			<div class="col-md-4 col-sm-12">
+				<select id="coin-select" class="form-control">
+					<option selected value="bitcoin">Bitcoin</option>
+					<option value="ethereum">Ethereum</option>
+					<option value="bitcoin_cash">Bitcoin Cash</option>
+					<option value="litecoin">Litecoin</option>
+					<option value="ripple">Ripple</option>
+				</select>
+			</div>
+			<div class="col-md-4 col-sm-12">
 				<select id="var-select" class="form-control">
 					<option selected value="price_usd">Price in dollars</option>
 					<option value="market_cap">Market capitalization</option>
@@ -36,11 +45,11 @@
 			</div>
 		</div>
 		<div class="row">
-			<div class="col-md-4" id="chart-area1"></div>
-			<div class="col-md-4" id="chart-area2"></div>  
-			<div class="col-md-4" id="chart-area3"></div>  
-			<div class="col-md-4" id="chart-area4"></div>  
-			<div class="col-md-4" id="chart-area5"></div>  
+			<div id="line-area" class="col-md-8"></div>
+			<div class="col-md-4">
+				<div id="donut-area1"></div>
+				<div id="donut-area2"></div>
+			</div>
 		</div>
 	</div>
 
@@ -52,6 +61,7 @@
 	<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js" integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU="crossorigin="anonymous"></script>
 	<!-- Custom JS -->
 	<script src="js/lineChart.js"></script>
+	<script src="js/donutChart.js"></script>
 	<script src="js/main.js"></script>
 </body>
 </html>

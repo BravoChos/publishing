@@ -1,14 +1,13 @@
 /*
 *    lineChart.js
 *    Mastering Data Visualization with D3.js
-*    10.4 - Converting our code to OOP
+*    10.5 - Handling events across objects
 */
 
 class LineChart {
 	// constructor function - make a new visualization object.
-	constructor(_parentElement, _coin) {
+	constructor(_parentElement) {
 		this.parentElement = _parentElement
-		this.coin = _coin
 
 		this.initVis()
 	}
@@ -17,9 +16,9 @@ class LineChart {
 	initVis() {
 		const vis = this
 
-		vis.MARGIN = { LEFT: 50, RIGHT: 20, TOP: 50, BOTTOM: 50 }
-		vis.WIDTH = 350 - vis.MARGIN.LEFT - vis.MARGIN.RIGHT
-		vis.HEIGHT = 250 - vis.MARGIN.TOP - vis.MARGIN.BOTTOM
+		vis.MARGIN = { LEFT: 100, RIGHT: 100, TOP: 50, BOTTOM: 100 }
+		vis.WIDTH = 800 - vis.MARGIN.LEFT - vis.MARGIN.RIGHT
+		vis.HEIGHT = 500 - vis.MARGIN.TOP - vis.MARGIN.BOTTOM
 		
 		vis.svg = d3.select(vis.parentElement).append("svg")
 			.attr("width", vis.WIDTH + vis.MARGIN.LEFT + vis.MARGIN.RIGHT)
@@ -64,7 +63,7 @@ class LineChart {
 		
 		// axis generators
 		vis.xAxisCall = d3.axisBottom()
-			.ticks(3)
+			.ticks(5)
 		vis.yAxisCall = d3.axisLeft()
 			.ticks(6)
 			.tickFormat(d => `${parseInt(d / 1000)}k`)
@@ -84,6 +83,7 @@ class LineChart {
 		const vis = this
 
 		// filter data based on selections
+		vis.coin = $("#coin-select").val()
 		vis.yValue = $("#var-select").val()
 		vis.sliderValues = $("#date-slider").slider("values")
 		vis.dataTimeFiltered = filteredData[vis.coin].filter(d => {
@@ -179,6 +179,7 @@ class LineChart {
 	
 		// Update our line path
 		vis.g.select(".line")
+			.attr("stroke", color(vis.coin))
 			.transition(vis.t)
 			.attr("d", vis.line(vis.dataTimeFiltered))
 	
