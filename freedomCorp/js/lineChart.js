@@ -1,7 +1,7 @@
 /*
 *    lineChart.js
 *    Mastering Data Visualization with D3.js
-*    10.5 - Handling events across objects
+*    10.6 - D3 Brushes
 */
 
 class LineChart {
@@ -16,9 +16,9 @@ class LineChart {
 	initVis() {
 		const vis = this
 
-		vis.MARGIN = { LEFT: 100, RIGHT: 100, TOP: 50, BOTTOM: 100 }
+		vis.MARGIN = { LEFT: 100, RIGHT: 100, TOP: 30, BOTTOM: 30 }
 		vis.WIDTH = 800 - vis.MARGIN.LEFT - vis.MARGIN.RIGHT
-		vis.HEIGHT = 500 - vis.MARGIN.TOP - vis.MARGIN.BOTTOM
+		vis.HEIGHT = 350 - vis.MARGIN.TOP - vis.MARGIN.BOTTOM
 		
 		vis.svg = d3.select(vis.parentElement).append("svg")
 			.attr("width", vis.WIDTH + vis.MARGIN.LEFT + vis.MARGIN.RIGHT)
@@ -40,14 +40,6 @@ class LineChart {
 			.attr("stroke", "grey")
 			.attr("stroke-width", "3px")
 		
-		// axis labels
-		vis.xLabel = vis.g.append("text")
-			.attr("class", "x axisLabel")
-			.attr("y", vis.HEIGHT + 50)
-			.attr("x", vis.WIDTH / 2)
-			.attr("font-size", "20px")
-			.attr("text-anchor", "middle")
-			.text(vis.coin)
 		vis.yLabel = vis.g.append("text")
 			.attr("class", "y axisLabel")
 			.attr("transform", "rotate(-90)")

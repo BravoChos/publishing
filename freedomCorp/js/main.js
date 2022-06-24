@@ -1,13 +1,14 @@
 /*
 *    main.js
 *    Mastering Data Visualization with D3.js
-*    10.5 - Handling events across objects
+*    10.6 - D3 Brushes
 */
 
 // global variables
 let lineChart
 let donutChart1
 let donutChart2
+let timeline
 let filteredData = {}
 let donutData = []
 const color = d3.scaleOrdinal(d3.schemePastel1)
@@ -31,9 +32,10 @@ $("#date-slider").slider({
 		parseTime("31/10/2017").getTime()
 	],
 	slide: (event, ui) => {
-		$("#dateLabel1").text(formatTime(new Date(ui.values[0])))
-		$("#dateLabel2").text(formatTime(new Date(ui.values[1])))
-		updateCharts()
+		const dates = ui.values.map(val => new Date(val))
+		const xVals = dates.map(date => timeline.x(date))
+
+		timeline.brushComponent.call(timeline.brush.move, xVals)
 	}
 })
 
@@ -59,7 +61,21 @@ d3.json("data/coins.json").then(data => {
 	lineChart = new LineChart("#line-area")
 	donutChart1 = new DonutChart("#donut-area1", "24h_vol")
 	donutChart2 = new DonutChart("#donut-area2", "market_cap")
+	timeline = new Timeline("#timeline-area")
 })
+
+function brushed() {
+	const selection = d3.event.selection || timeline.x.range()
+	const newValues = selection.map(timeline.x.invert)
+
+	$("#date-slider")
+		.slider('values', 0, newValues[0])
+		.slider('values', 1, newValues[1])
+	$("#dateLabel1").text(formatTime(newValues[0]))
+	$("#dateLabel2").text(formatTime(newValues[1]))
+
+	lineChart.wrangleData()
+}
 
 function arcClicked(arc) {
 	$("#coin-select").val(arc.data.coin)
@@ -70,4 +86,5 @@ function updateCharts(){
 	lineChart.wrangleData()
 	donutChart1.wrangleData()
 	donutChart2.wrangleData()
+	timeline.wrangleData()
 }
