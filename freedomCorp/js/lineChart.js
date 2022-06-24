@@ -1,7 +1,7 @@
 /*
 *    lineChart.js
 *    Mastering Data Visualization with D3.js
-*    10.6 - D3 Brushes
+*    Project 4 - FreedomCorp Dashboard
 */
 
 class LineChart {
