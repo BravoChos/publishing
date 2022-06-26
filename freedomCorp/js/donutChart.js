@@ -15,9 +15,9 @@ class DonutChart {
 	initVis() {
     const vis = this
 
-		vis.MARGIN = { LEFT: 0, RIGHT: 0, TOP: 40, BOTTOM: 0 }
-		vis.WIDTH = 250 - vis.MARGIN.LEFT - vis.MARGIN.RIGHT
-    vis.HEIGHT = 250 - vis.MARGIN.TOP - vis.MARGIN.BOTTOM
+		vis.MARGIN = { LEFT: 40, RIGHT: 100, TOP: 40, BOTTOM: 10 }
+		vis.WIDTH = 350 - vis.MARGIN.LEFT - vis.MARGIN.RIGHT
+    vis.HEIGHT = 140 - vis.MARGIN.TOP - vis.MARGIN.BOTTOM
     vis.RADIUS = Math.min(vis.WIDTH, vis.HEIGHT) / 2
 		
 		vis.svg = d3.select(vis.parentElement).append("svg")
@@ -30,20 +30,22 @@ class DonutChart {
     
     vis.pie = d3.pie()
       .padAngle(0.03)
-      .value(d => d.data[vis.variable])
+      .value(d => d.count)
       .sort(null)
     
     vis.arc = d3.arc()
-      .innerRadius(vis.RADIUS - 60)
-      .outerRadius(vis.RADIUS - 30)
+      .innerRadius(vis.RADIUS - 15)
+      .outerRadius(vis.RADIUS)
 
     vis.g.append("text")
-      .attr("y", -(vis.HEIGHT / 2))
-      .attr("x", -(vis.WIDTH / 2))
-      .attr("font-size", "15px")
+      .attr("y", -60)
+      .attr("x", -140)
+      .attr("font-size", "12px")
       .attr("text-anchor", "start")
-      .text(vis.variable == "market_cap" ? "Market Capitalization" 
-        : "24 Hour Trading Volume")
+      .text("Company size")
+
+    vis.color = d3.scaleOrdinal(d3.schemeAccent)
+    vis.addLegend()
 
 		vis.wrangleData()
 	}
@@ -51,7 +53,15 @@ class DonutChart {
 	wrangleData() {
 		const vis = this
 
-    vis.activeCoin = $("#coin-select").val()
+    const sizeNest = d3.nest()
+      .key(d => d.company_size)
+      .entries(calls)
+    vis.dataFiltered = sizeNest.map(size => {
+      return {
+        value: size.key,
+        count: size.values.length
+      }
+    })
 
 		vis.updateVis()
 	}
@@ -60,70 +70,54 @@ class DonutChart {
     const vis = this
 
     vis.t = d3.transition().duration(750)
+
     vis.path = vis.g.selectAll("path")
-    vis.data0 = vis.path.data()
-    vis.data1 = vis.pie(donutData)
-  
-    // JOIN elements with new data.
-    vis.path = vis.path.data(vis.data1, key)
-  
-    // EXIT old elements from the screen.
-    vis.path.exit()
-      .datum((d, i) => findNeighborArc(i, vis.data1, vis.data0, key) || d)
-      .transition(vis.t)
-        .attrTween("d", arcTween)
-        .remove()
+      .data(vis.pie(vis.dataFiltered))
     
-    // UPDATE elements still on the screen.
     vis.path.transition(vis.t)
       .attrTween("d", arcTween)
-      .attr("fill-opacity", (d) => (d.data.coin === vis.activeCoin) ? 1 : 0.3)
   
-    // ENTER new elements in the array.
     vis.path.enter().append("path")
-      .each(function(d, i) { this._current = findNeighborArc(i, vis.data0, vis.data1, key) || d }) 
-      .attr("fill", d => color(d.data.coin))
-      .attr("fill-opacity", (d) => (d.data.coin === vis.activeCoin) ? 1 : 0.3)
-      .on("click", arcClicked)
+      .attr("fill", d => vis.color(d.data.value))
       .transition(vis.t)
         .attrTween("d", arcTween)
-  
-    function key(d) {
-      return d.data.coin
-    }
-  
-    function findNeighborArc(i, data0, data1, key) {
-      let d
-      return (d = findPreceding(i, data0, data1, key)) ? {startAngle: d.endAngle, endAngle: d.endAngle}
-        : (d = findFollowing(i, data0, data1, key)) ? {startAngle: d.startAngle, endAngle: d.startAngle}
-        : null
-    }
-  
-    function findPreceding(i, data0, data1, key) {
-      const m = data0.length
-      while (--i >= 0) {
-        const k = key(data1[i])
-        for (let j = 0; j < m; ++j) {
-          if (key(data0[j]) === k) return data0[j]
-        }
-      }
-    }
-  
-    function findFollowing(i, data0, data1, key) {
-      const n = data1.length
-      const m = data0.length
-      while (++i < n) {
-        const k = key(data1[i])
-        for (let j = 0; j < m; ++j) {
-          if (key(data0[j]) === k) return data0[j]
-        }
-      }
-    }
   
     function arcTween(d) {
       const i = d3.interpolate(this._current, d)
       this._current = i(1)
       return (t) => vis.arc(i(t))
     }
-	}
+  }
+
+  addLegend() {
+	  const vis = this
+
+    const legend = vis.g.append("g")
+      .attr("transform", "translate(150, -30)")
+
+    const legendArray = [
+    	{ label: "Small", color: vis.color("small") },
+    	{ label: "Medium", color: vis.color("medium") },
+    	{ label: "Large", color: vis.color("large") }
+	  ]
+
+    const legendRow = legend.selectAll(".legendRow")
+      .data(legendArray)
+      .enter().append("g")
+        .attr("class", "legendRow")
+        .attr("transform", (d, i) => `translate(0, ${i * 20})`)
+        
+    legendRow.append("rect")
+      .attr("class", "legendRect")
+      .attr("width", 10)
+      .attr("height", 10)
+      .attr("fill", d => d.color)
+
+    legendRow.append("text")
+      .attr("class", "legendText")
+      .attr("x", -10)
+      .attr("y", 10)
+      .attr("text-anchor", "end")
+      .text(d => d.label) 
+  }
 }

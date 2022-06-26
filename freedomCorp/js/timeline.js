@@ -14,9 +14,9 @@ class Timeline {
 	initVis() {
     const vis = this
 
-		vis.MARGIN = { LEFT: 80, RIGHT: 100, TOP: 0, BOTTOM: 30 }
+		vis.MARGIN = { LEFT: 80, RIGHT: 100, TOP: 0, BOTTOM: 20 }
 		vis.WIDTH = 800 - vis.MARGIN.LEFT - vis.MARGIN.RIGHT
-		vis.HEIGHT = 130 - vis.MARGIN.TOP - vis.MARGIN.BOTTOM
+		vis.HEIGHT = 100 - vis.MARGIN.TOP - vis.MARGIN.BOTTOM
 		
 		vis.svg = d3.select(vis.parentElement).append("svg")
 			.attr("width", vis.WIDTH + vis.MARGIN.LEFT + vis.MARGIN.RIGHT)
@@ -31,7 +31,7 @@ class Timeline {
 		
 		// x-axis
 		vis.xAxisCall = d3.axisBottom()
-			.ticks(4)
+			.ticks(5)
 		vis.xAxis = vis.g.append("g")
 			.attr("class", "x axis")
 			.attr("transform", `translate(0, ${vis.HEIGHT})`)
@@ -43,7 +43,7 @@ class Timeline {
 		vis.brush = d3.brushX()
       .handleSize(10)
 			.extent([[0, 0], [vis.WIDTH, vis.HEIGHT]])
-			.on("brush", brushed)
+			.on("brush end", brushed)
 
 		// append brush component
 		vis.brushComponent = vis.g.append("g")
@@ -56,9 +56,18 @@ class Timeline {
 	wrangleData() {
 		const vis = this
 
-    vis.coin = $("#coin-select").val()
-    vis.yValue = $("#var-select").val()
-    vis.data = filteredData[vis.coin]
+    vis.variable = "call_revenue"
+    const dayNest = d3.nest()
+			.key(d => formatTime(d.date))
+			.entries(calls)
+
+    vis.dataFiltered = dayNest
+			.map(day => {
+				return {
+					date: day.key,
+					sum: day.values.reduce((accumulator, current) => accumulator + current[vis.variable], 0)               
+				}
+			})
 
 		vis.updateVis()
 	}
@@ -66,11 +75,11 @@ class Timeline {
 	updateVis() {
     const vis = this
 
-		vis.t = d3.transition().duration(1000)
+		vis.t = d3.transition().duration(750)
 
     // update scales
-		vis.x.domain(d3.extent(vis.data, d => d.date))
-		vis.y.domain([0, d3.max(vis.data, d => d[vis.yValue]) * 1.005])
+		vis.x.domain(d3.extent(vis.dataFiltered, d => parseTime(d.date)))
+		vis.y.domain([0, d3.max(vis.dataFiltered, d => d.sum)])
 	
 		// update axes
 		vis.xAxisCall.scale(vis.x)
@@ -78,12 +87,12 @@ class Timeline {
   
     // area path generator
     vis.area = d3.area()
-      .x(d => vis.x(d.date))
+      .x(d => vis.x(parseTime(d.date)))
       .y0(vis.HEIGHT)
-      .y1(d => vis.y(d[vis.yValue]))
+      .y1(d => vis.y(d.sum))
 
     vis.areaPath
-      .data([vis.data])
+      .data([vis.dataFiltered])
       .attr("d", vis.area)
 	}
 }
