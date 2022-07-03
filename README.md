@@ -22,3 +22,27 @@ live-server
 ```
 
 Have fun!!
+
+## Example
+
+1. Starbreak - transitions
+
+<img src='./assets/starBreak-transition.gif' width='350'>
+
+<br/>
+
+2. Gapminder
+
+<img src='./assets/gapminder.gif' width='70%'>
+
+<br/>
+
+3. CoinStats
+
+<img src='./assets/coinStats.gif' width='70%'>
+
+<br/>
+
+4. FreedomCorp Dashboard
+
+<img src='./assets/freedomCorp.gif' width='70%'><br/>
